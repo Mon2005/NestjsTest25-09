@@ -1,15 +1,17 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
 import { TodosModule } from './todos/todos.module';
 
 @Module({
   imports: [
-    MongooseModule.forRoot('mongodb://localhost:27017/todo_app'),
+    ConfigModule.forRoot({ isGlobal: true }), // <- bắt buộc để load .env
+    MongooseModule.forRoot(process.env.MONGODB_URI!), // ! để chắc chắn không undefined
+    UsersModule,
+    AuthModule,
     TodosModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}

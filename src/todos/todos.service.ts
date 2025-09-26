@@ -1,6 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, isValidObjectId } from 'mongoose';
 import { Todo, TodoDocument } from './schemas/todo.schema';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
@@ -10,26 +14,25 @@ import { QueryTodoDto } from './dto/query-todo.dto';
 export class TodosService {
   constructor(@InjectModel(Todo.name) private todoModel: Model<TodoDocument>) {}
 
-  async create(createTodoDto: CreateTodoDto): Promise<Todo> {
-    const todo = new this.todoModel(createTodoDto);
+  async create(userId: string, dto: CreateTodoDto): Promise<Todo> {
+    const todo = new this.todoModel({ ...dto, user: userId });
     return todo.save();
   }
 
-  async findAll(query: QueryTodoDto) {
-    const { keyword, status, limit = 10, offset = 0 } = query;
+  async findAll(userId: string, query: QueryTodoDto) {
+    const { search, status, offset = 0, limit = 10 } = query;
+    const filter: any = { user: userId };
 
-    const filter: any = {};
-    if (keyword) {
+    if (search) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       filter.$or = [
-        { title: { $regex: keyword, $options: 'i' } },
-        { content: { $regex: keyword, $options: 'i' } },
+        { title: { $regex: search, $options: 'i' } },
+        { content: { $regex: search, $options: 'i' } },
       ];
     }
-    if (status) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      filter.status = status;
-    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if (status) filter.status = status;
 
     const [items, total] = await Promise.all([
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
@@ -42,41 +45,43 @@ export class TodosService {
       statusCode: 200,
       data: {
         items,
-        meta: {
-          limit,
-          offset,
-          total,
-          totalPages: Math.ceil(total / limit),
-        },
+        meta: { limit, offset, total, totalPages: Math.ceil(total / limit) },
       },
     };
   }
 
-  async findOne(id: string): Promise<Todo> {
-    const todo = await this.todoModel.findById(id).exec();
-    if (!todo) throw new NotFoundException(`Todo ${id} not found`);
-    return todo;
+  async findOne(userId: string, id: string) {
+    if (!isValidObjectId(id))
+      throw new BadRequestException('Invalid ID format');
+
+    const todo = await this.todoModel.findOne({ _id: id, user: userId }).exec();
+    if (!todo) throw new NotFoundException(`Todo ${id} not found or not yours`);
+
+    return { statusCode: 200, data: todo };
   }
 
-  async update(id: string, updateTodoDto: UpdateTodoDto): Promise<Todo> {
+  async update(userId: string, id: string, dto: UpdateTodoDto) {
+    if (!isValidObjectId(id))
+      throw new BadRequestException('Invalid ID format');
+
     const todo = await this.todoModel
-      .findByIdAndUpdate(
-        id,
-        { ...updateTodoDto, updatedAt: new Date() },
-        { new: true },
-      )
+      .findOneAndUpdate({ _id: id, user: userId }, dto, { new: true })
       .exec();
-    if (!todo) throw new NotFoundException(`Todo ${id} not found`);
+
+    if (!todo) throw new NotFoundException(`Todo ${id} not found or not yours`);
     return todo;
   }
 
-  async remove(id: string): Promise<{ statusCode: number; message: string }> {
-    const result = await this.todoModel.findByIdAndDelete(id).exec();
-    if (!result) throw new NotFoundException(`Todo ${id} not found`);
+  async remove(userId: string, id: string) {
+    if (!isValidObjectId(id))
+      throw new BadRequestException('Invalid ID format');
 
-    return {
-      statusCode: 200,
-      message: 'Todo deleted successfully',
-    };
+    const result = await this.todoModel
+      .findOneAndDelete({ _id: id, user: userId })
+      .exec();
+    if (!result)
+      throw new NotFoundException(`Todo ${id} not found or not yours`);
+
+    return { statusCode: 200, message: 'Todo deleted successfully' };
   }
 }

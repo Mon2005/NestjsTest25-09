@@ -2,43 +2,52 @@ import {
   Controller,
   Get,
   Post,
+  Put,
+  Delete,
   Body,
   Param,
-  Delete,
-  Put,
   Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { TodosService } from './todos.service';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
 import { QueryTodoDto } from './dto/query-todo.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('todos')
+@UseGuards(JwtAuthGuard) // bảo vệ toàn bộ route
 export class TodosController {
   constructor(private readonly todosService: TodosService) {}
 
   @Post()
-  create(@Body() createTodoDto: CreateTodoDto) {
-    return this.todosService.create(createTodoDto);
+  create(@Req() req, @Body() dto: CreateTodoDto) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+    return this.todosService.create(req.user.userId, dto);
   }
 
   @Get()
-  findAll(@Query() query: QueryTodoDto) {
-    return this.todosService.findAll(query);
+  findAll(@Req() req, @Query() query: QueryTodoDto) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+    return this.todosService.findAll(req.user.userId, query);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.todosService.findOne(id);
+  findOne(@Req() req, @Param('id') id: string) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+    return this.todosService.findOne(req.user.userId, id);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() updateTodoDto: UpdateTodoDto) {
-    return this.todosService.update(id, updateTodoDto);
+  update(@Req() req, @Param('id') id: string, @Body() dto: UpdateTodoDto) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+    return this.todosService.update(req.user.userId, id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.todosService.remove(id);
+  remove(@Req() req, @Param('id') id: string) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+    return this.todosService.remove(req.user.userId, id);
   }
 }

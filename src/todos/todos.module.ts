@@ -6,7 +6,6 @@ import { Todo, TodoSchema } from './schemas/todo.schema';
 
 @Module({
   imports: [
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     MongooseModule.forFeature([{ name: Todo.name, schema: TodoSchema }]),
   ],
   controllers: [TodosController],

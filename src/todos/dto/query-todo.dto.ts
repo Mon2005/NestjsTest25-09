@@ -1,22 +1,25 @@
+import { IsOptional, IsString, IsEnum, IsInt, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import { IsOptional, IsString, IsIn, IsNumber } from 'class-validator';
+import { TodoStatus } from '../enums/todo-status.enum';
 
 export class QueryTodoDto {
   @IsOptional()
   @IsString()
-  keyword?: string;
+  search?: string; // 👈 đổi từ keyword sang search
 
   @IsOptional()
-  @IsIn(['pending', 'in-progress', 'done'])
-  status?: string;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  limit?: number = 10;
+  @IsEnum(TodoStatus)
+  status?: TodoStatus;
 
   @IsOptional()
   @Type(() => Number)
-  @IsNumber()
-  offset?: number = 0;
+  @IsInt()
+  @Min(0)
+  offset = 0;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  limit = 10;
 }

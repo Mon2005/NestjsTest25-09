@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { TodoStatus } from '../enums/todo-status.enum';
 
 export type TodoDocument = Todo & Document;
 
@@ -11,14 +12,14 @@ export class Todo {
   @Prop()
   content: string;
 
-  @Prop({ enum: ['pending', 'in-progress', 'done'], default: 'pending' })
-  status: string;
+  @Prop({ enum: TodoStatus, default: TodoStatus.PENDING })
+  status: TodoStatus;
 
-  @Prop({ type: Date, default: Date.now })
-  createdAt: Date;
-
-  @Prop({ type: Date, default: Date.now })
-  updatedAt: Date;
+  @Prop({ type: String, ref: 'User' })
+  user: string;
 }
 
 export const TodoSchema = SchemaFactory.createForClass(Todo);
+
+// ✅ Export TodoStatus nếu muốn DTO import từ schema
+export { TodoStatus };

@@ -1,15 +1,16 @@
-import { IsNotEmpty, IsOptional, IsString, IsIn } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { TodoStatus } from '../enums/todo-status.enum';
 
 export class CreateTodoDto {
-  @IsNotEmpty()
   @IsString()
+  @IsNotEmpty()
   title: string;
 
-  @IsOptional()
   @IsString()
+  @IsOptional()
   content?: string;
 
+  @IsEnum(TodoStatus)
   @IsOptional()
-  @IsIn(['pending', 'in-progress', 'done'])
-  status?: string;
+  status?: TodoStatus;
 }
